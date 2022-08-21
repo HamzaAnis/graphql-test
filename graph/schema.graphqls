@@ -1,0 +1,39 @@
+type User {
+    id: ID!
+    name: String!
+    email: String!
+}
+
+type Video {
+    id: ID!
+    name: String!
+    description: String!
+    user: User!
+    url: String!
+    createdAt: Time!
+    screenshots: [Screenshot]
+    related(limit: Int = 25, offset: Int = 0): [Video!]!
+}
+
+type Screenshot {
+    id: ID!
+    videoId: ID!
+    url: String!
+}
+
+input NewVideo {
+    name: String!
+    description: String!
+    userId: ID!
+    url: String!
+}
+
+type Mutation {
+    createVideo(input: NewVideo!): Video!
+}
+
+type Query {
+    Videos(limit: Int = 25, offset: Int = 0): [Video!]!
+}
+
+scalar Time
