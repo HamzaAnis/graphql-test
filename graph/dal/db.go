@@ -13,6 +13,7 @@ const (
 	DB_PASSWORD = ""
 	DB_NAME     = ""
 	SSL_MODE    = "disable"
+	PORT        = 5433
 )
 
 var once sync.Once
@@ -21,8 +22,8 @@ func Connect() (*sql.DB, error) {
 	var db *sql.DB
 	var err error
 	once.Do(func() {
-		dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s",
-			DB_USER, DB_PASSWORD, DB_NAME, SSL_MODE)
+		dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s port=%d",
+			DB_USER, DB_PASSWORD, DB_NAME, SSL_MODE, PORT)
 		db, _ = sql.Open("postgres", dbinfo)
 		err = db.Ping()
 	})

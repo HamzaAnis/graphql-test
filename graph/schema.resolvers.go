@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/hamzaanis/graphql-test/graph/dal"
@@ -16,16 +17,17 @@ import (
 // CreateVideo is the resolver for the createVideo field.
 func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (*model.Video, error) {
 	newVideo := &model.Video{
-		URL:       input.URL,
-		Name:      input.Name,
-		CreatedAt: time.Now().UTC(),
+		URL:         input.URL,
+		Name:        input.Name,
+		Description: input.Description,
+		CreatedAt:   time.Now().UTC(),
 	}
-
-	rows, err := dal.LogAndQuery(r.db, "INSERT INTO videos (name, url, user_id, created_at) VALUES($1, $2, $3, $4) RETURNING id",
-		input.Name, input.URL, input.UserID, newVideo.CreatedAt)
+	rows, err := dal.LogAndQuery(r.db, "INSERT INTO videos (name, url, description, user_id, created_at) VALUES($1, $2, $3, $4, $5) RETURNING id",
+		input.Name, input.URL, input.Description, input.UserID, newVideo.CreatedAt)
 	defer rows.Close()
 
 	if err != nil || !rows.Next() {
+		log.Println("Got the error: ", err)
 		return &model.Video{}, err
 	}
 	if err := rows.Scan(&newVideo.ID); err != nil {
@@ -35,13 +37,13 @@ func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo
 		}
 		return &model.Video{}, errors.InternalServerError
 	}
+	log.Println("Video returning is ", newVideo)
 
 	return newVideo, nil
 }
 
 // Videos is the resolver for the Videos field.
 func (r *queryResolver) Videos(ctx context.Context, limit *int, offset *int) ([]*model.Video, error) {
-	var video *model.Video
 	var videos []*model.Video
 
 	rows, err := dal.LogAndQuery(r.db, "SELECT id, name, url, created_at, user_id FROM videos ORDER BY created_at desc limit $1 offset $2", limit, offset)
@@ -52,11 +54,14 @@ func (r *queryResolver) Videos(ctx context.Context, limit *int, offset *int) ([]
 		return nil, errors.InternalServerError
 	}
 	for rows.Next() {
-		if err := rows.Scan(&video.ID, &video.Name, &video.URL, &video.CreatedAt, video.User.ID); err != nil {
+		var video model.Video
+		video.User = new(model.User)
+
+		if err := rows.Scan(&video.ID, &video.Name, &video.URL, &video.CreatedAt, &video.User.ID); err != nil {
 			errors.DebugPrintf(err)
 			return nil, errors.InternalServerError
 		}
-		videos = append(videos, video)
+		videos = append(videos, &video)
 	}
 
 	return videos, nil
